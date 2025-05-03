@@ -1,0 +1,5 @@
+instabot
+instagrapi
+pillow
+python-dotenv
+openai
