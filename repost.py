@@ -85,45 +85,47 @@ def repost_story(cl, story):
     Download a story and repost it to your own story.
     """
     try:
-        # Download the story media
-        media_path = cl.story_download(story.pk)
-        print(f"Downloaded story to {media_path}")
+        user_info = cl.user_info(story.user.pk)
+        if user_info.account_type in [2, 3]:  # 2: Business, 3: Creator
+            # Download the story media
+            media_path = cl.story_download(story.pk)
+            print(f"Downloaded story to {media_path}")
+
+            # Safely get caption if it exists, else use empty string
+            caption = getattr(story, "caption", "")
+
+            # Ajouter des hashtags à la légende
+            # hashtags = "#inspiration #photography #AIgenerated #iurixtech #artificialintelligence #techinnovation, #digitalart, #creativeAI"
+            hashtags = "#iurixtech"
+            caption = f"{caption}\n\n{hashtags} owner: @{story.user.username}"
+
+            # Ajouter une localisation
+            locations = []
+            if hasattr(story, "locations") and story.locations:
+                location = story.locations[0]
+                print(f"Using location: {location.name}")
+
+            # Ajouter des stickers si disponibles
+            stickers = []
+            if hasattr(story, "stickers") and story.stickers:
+                stickers = story.stickers
+                print(f"Found {len(stickers)} stickers in the original story.")
 
 
-        # Safely get caption if it exists, else use empty string
-        caption = getattr(story, "caption", "")
-
-        # Ajouter des hashtags à la légende
-        # hashtags = "#inspiration #photography #AIgenerated #iurixtech #artificialintelligence #techinnovation, #digitalart, #creativeAI"
-        hashtags = "#iurixtech"
-        caption = f"{caption}\n\n{hashtags} owner: @{story.user.username}"
-
-        # Ajouter une localisation
-        locations = []
-        if hasattr(story, "locations") and story.locations:
-            location = story.locations[0]
-            print(f"Using location: {location.name}")
-
-        # Ajouter des stickers si disponibles
-        stickers = []
-        if hasattr(story, "stickers") and story.stickers:
-            stickers = story.stickers
-            print(f"Found {len(stickers)} stickers in the original story.")
-
-
-        # Déterminer le type de média et republier en conséquence
-        if story.media_type == 1:  # Photo
-            cl.photo_upload_to_story(media_path, caption=caption, locations=locations, stickers=stickers)
-            print("Reposted photo story with hashtags and location.")
-        elif story.media_type == 2:  # Vidéo
-            cl.video_upload_to_story(media_path, caption=caption, locations=locations, stickers=stickers)
-            print("Reposted video story with hashtags and location.")
+            # Déterminer le type de média et republier en conséquence
+            if story.media_type == 1:  # Photo
+                cl.photo_upload_to_story(media_path, caption=caption, locations=locations, stickers=stickers)
+                print("Reposted photo story with hashtags and location.")
+            elif story.media_type == 2:  # Vidéo
+                cl.video_upload_to_story(media_path, caption=caption, locations=locations, stickers=stickers)
+                print("Reposted video story with hashtags and location.")
+            else:
+                print("Unsupported story media type.")
         else:
-            print("Unsupported story media type.")
+            print(f"User {story.user.username} is not a business or creator account. Skipping story repost.")
     except Exception as e:
-        print(f"Error reposting story: {e}")
-
-
+        print(f"Error reposting story: {e}")    
+    return
 
 def download_image_from_url(url, output_path):
     """
