@@ -1,26 +1,12 @@
 import os
-from instagrapi import Client
+
 from dotenv import load_dotenv
 import random
 
+from utils import authenticate, get_stories_from_user, repost_story
+
 load_dotenv()
 ACCOUNT_USERNAME = os.environ.get("USERNAME")
-ACCOUNT_PASSWORD = os.environ.get("PASSWORD")
-
-def authenticate():
-    cl = Client()
-    cl.login(ACCOUNT_USERNAME, ACCOUNT_PASSWORD)
-    # print(f"Authenticated as {ACCOUNT_USERNAME}")
-    return cl
-
-def get_following_user_ids(cl):
-    """
-    Get the list of user IDs the account is following.
-    """
-    user_id = cl.user_id_from_username(ACCOUNT_USERNAME)
-    following = cl.user_following(user_id)
-    return [user.pk for user in following.values()]
-
 
 
 
@@ -57,66 +43,58 @@ def get_recent_posts_and_stories(cl, user_ids, posts_per_user=3):
     return data
 
 
-def get_stories_from_user(cl, username):
-    """
-    Retrieve all current stories from a specific following channel by username.
-    """
-    try:
-        user_id = cl.user_id_from_username(username)
-        stories = cl.user_stories(user_id)
-        # print(f"Found {len(stories)} stories for user '{username}'.")
-        return stories
-    except Exception as e:
-        # print(f"Error retrieving stories for {username}: {e}")
-        return []
-
 
 def repost_story(cl, story):
     """
     Download a story and repost it to your own story.
     """
-    try:
-        # Download the story media
-        media_path = cl.story_download(story.pk)
-        # print(f"Downloaded story to {media_path}")
 
-        # Safely get caption if it exists, else use empty string
-        caption = getattr(story, "caption", "")
+    # Download the story media
+    media_path = cl.story_download(story.pk)
+    print(f"Downloaded story to {media_path}")
 
-        # Ajouter des hashtags à la légende
-        # hashtags = "#inspiration #photography #AIgenerated #iurixtech #artificialintelligence #techinnovation, #digitalart, #creativeAI"
-        hashtags = "#iurixtech"
-        caption = f"{caption}\n\n{hashtags} owner: @{story.user.username}"
+    # Safely get caption if it exists, else use empty string
+    caption = getattr(story, "caption", "")
 
-        # Ajouter une localisation
-        locations = []
-        if hasattr(story, "locations") and story.locations:
-            locations = story.locations[0]
-            # print(f"Using location: {location.name}")
+    # Ajouter des hashtags à la légende
+    # hashtags = "#inspiration #photography #AIgenerated #iurixtech #artificialintelligence #techinnovation, #digitalart, #creativeAI"
+    hashtags = "#iurixtech"
+    caption = f"{caption}\n\n{hashtags} owner: @{story.user.username}"
 
-        # Ajouter des stickers si disponibles
-        stickers = []
-        if hasattr(story, "stickers") and story.stickers:
-            stickers = story.stickers
-            # print(f"Found {len(stickers)} stickers in the original story.")
+    # Ajouter une localisation
+    locations = []
+    if hasattr(story, "locations") and story.locations:
+        locations = story.locations[0]
+        # print(f"Using location: {location.name}")
 
-        # Déterminer le type de média et republier en conséquence
-        if story.media_type == 1:  # Photo
-            cl.photo_upload_to_story(media_path, caption=caption, locations=locations, stickers=stickers)
-            print("Reposted photo story with hashtags and location.")
-        elif story.media_type == 2:  # Vidéo
-            cl.video_upload_to_story(media_path, caption=caption, locations=locations, stickers=stickers)
-            # print("Reposted video story with hashtags and location.")
-        else:
-            # print("Unsupported story media type.")
-            return "Unsupported story media type."
-    except Exception as e:
-        # print(f"Error reposting story: {e}")
-        return f"Error reposting story: {e}"
+    # Ajouter des stickers si disponibles
+    stickers = []
+    if hasattr(story, "stickers") and story.stickers:
+        stickers = story.stickers
+        # print(f"Found {len(stickers)} stickers in the original story.")
+    print(f"Reposting story with caption: {media_path} {story.media_type} {caption}")
+    # Déterminer le type de média et republier en conséquence
+    if story.media_type == 1:  # Photo
+        cl.photo_upload_to_story(media_path, caption=caption, locations=locations, stickers=stickers)
+        print("Reposted photo story.")
+    elif story.media_type == 2:  # Vidéo
+        owner = cl.user_info_by_username(story.user.username)
+        upload_id = cl.video_upload_to_story(
+            media_path,
+            f"Credits @{owner}")
+        print(f"Video uploaded with ID: {upload_id}")
+        
+        # result = cl.video_configure_to_story(upload_id)
+        # print(f"Story successfully configured and posted! {result}")
+        
+        print("Reposted video story.")
+    else:
+        # print("Unsupported story media type.")
+        return "Unsupported story media type."
     return
 
 
-def main():
+def select_stories():
     cl = authenticate()
     # user_ids = get_following_user_ids(cl)
     # print(f"Found {len(user_ids)} followed accounts.")
@@ -132,7 +110,7 @@ def main():
         
         # Select 3 random users from list
         random_users = random.sample(usernames, random_number)
-        print(f"Selected random users: {random_users}")
+        # print(f"Selected random users: {random_users}")
         stories = []
         for username in random_users:
             user_info = cl.user_info_by_username(username)
@@ -161,5 +139,6 @@ def main():
         repost_story(cl, story)
 
 
+
 if __name__ == "__main__":
-    main()
+    select_stories()
