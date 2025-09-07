@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+from moviepy.editor import VideoFileClip
 
 
 from utils import authenticate, split_video_for_stories
@@ -43,18 +44,18 @@ def repost_reel(cl, username, code):
                 os.remove(filename)
         else:
             # Load video and resize
-            # clip = VideoFileClip(media_path) # .resize(height=1280).set_position("center")
+            clip = VideoFileClip(media_path) # .resize(height=1280).set_position("center")
 
             # Trim the original clip before creating the composite
             #if clip.duration > 15:
             #    clip = clip.subclip(0, 15)  # ✅ safe here
 
             # Create composite canvas
-            #final_clip = CompositeVideoClip([clip], size=(720, 1280))
-            #final_clip = final_clip.set_duration(clip.duration)  # ✅ set matching duration
+            # final_clip = CompositeVideoClip([clip], size=(720, 1280))
+            clip = clip.set_duration(clip.duration)  # ✅ set matching duration
 
             # Export final video
-            #final_clip.write_videofile(f"{code}_story_final.mp4", codec="libx264", audio_codec="aac", fps=24)
+            clip.write_videofile(f"{code}_story_final.mp4", codec="libx264", audio_codec="aac", fps=24)
 
             cl.video_upload_to_story(
                 f"{code}_story_final.mp4",

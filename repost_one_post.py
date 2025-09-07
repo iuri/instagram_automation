@@ -89,13 +89,38 @@ def repost_media(cl, media):
 def main():
     cl = authenticate()
     target_username = input("Enter the username to fetch stories from: ").strip()
+    code = input("Enter the Post ID to repost: ").strip()  
     user_info = cl.user_info_by_username(target_username)
-    # print(f"User info: {user_info}")
-           
-    data = get_recent_posts_and_stories(cl, [user_info.pk], 1)
-    repost_media(data, cl)
-    print(f"Fetched {len(data)} posts and stories.")
-    
+    print(f"User info: {user_info}")
+    if code:
+        print(f"Fetching media info for post ID: {code}")
+        media = cl.media_info(cl.media_pk_from_code(code))
+        print(f"Media info: {media}")
+
+        # repost_media(cl, media)
+
+
+        # Repost based on type
+        if media.media_type == 1:  # Photo
+            # Download file
+            media_path = cl.photo_download(media.pk)
+            cl.photo_upload(
+                path=media_path,
+                caption=media.caption_text or ""
+            )
+            cl.photo_upload_to_story(path=media_path)
+            print("Reposted photo.")
+        elif media.media_type == 8:  # Album/Carousel
+            media_paths = cl.album_download(media.pk)
+            cl.album_upload(
+                paths=media_paths,
+                caption=media.caption_text or ""
+            )
+            for path in media_paths:
+                cl.photo_upload_to_story(path=path)
+            print("Reposted album.")
+        else:
+            print("Unsupported media type")
 
 if __name__ == "__main__":  
     main()
